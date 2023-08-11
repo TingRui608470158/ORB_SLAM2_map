@@ -33,6 +33,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
                const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
+    mySettingFile = strSettingsFile;
     // Output welcome message
     cout << endl <<
     "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << endl <<
@@ -487,6 +488,26 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 {
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
+}
+
+void System::SaveMap(const string &filename)  
+{  
+    mpMap->Save(filename);   
+} 
+
+//地图加载
+void System::LoadMap(const string &filename)
+{
+    SystemSetting* mySystemSetting = new SystemSetting(mpVocabulary);
+     
+    mySystemSetting->LoadSystemSetting(mySettingFile);
+    mpMap->Load(filename,mySystemSetting);
+
+    std::vector<KeyFrame*> keyframedatabase_AllKeyFrames = mpMap->GetAllKeyFrames();
+    for( auto kf: keyframedatabase_AllKeyFrames )
+    {
+        mpKeyFrameDatabase->add(kf);
+    }
 }
 
 } //namespace ORB_SLAM

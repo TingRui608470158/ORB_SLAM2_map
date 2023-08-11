@@ -26,6 +26,8 @@
 #include <set>
 
 #include <mutex>
+#include"SystemSetting.h"
+#include "Converter.h"
 
 
 
@@ -66,6 +68,14 @@ public:
     // This avoid that two points are created simultaneously in separate threads (id conflict)
     std::mutex mMutexPointCreation;
 
+    //保存地图信息
+    void Save(const string &filename);
+    std::map<MapPoint*,unsigned long int> mmpnMapPointsIdx;
+    void GetMapPointsIdx();
+
+    //加载地图信息
+    void Load(const string &filename,SystemSetting* mySystemSetting);
+
 protected:
     std::set<MapPoint*> mspMapPoints;
     std::set<KeyFrame*> mspKeyFrames;
@@ -78,6 +88,13 @@ protected:
     int mnBigChangeIdx;
 
     std::mutex mMutexMap;
+
+    //保存地图点和关键帧 
+    void SaveMapPoint(ofstream &f,MapPoint* mp);
+    void SaveKeyFrame(ofstream &f,KeyFrame* kf);
+
+    MapPoint* LoadMapPoint(ifstream &f);
+    KeyFrame* LoadKeyFrame(ifstream &f,SystemSetting* mySystemSetting);
 };
 
 } //namespace ORB_SLAM

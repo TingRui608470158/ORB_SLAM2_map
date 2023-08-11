@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "SystemSetting.h"
 
 namespace ORB_SLAM2
 {
@@ -125,6 +126,11 @@ public:
     int GetTrackingState();
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
+
+    void SaveMap(const string &filename); 
+    void LoadMap(const string &filename);
+    std::string mySettingFile;
+   
 
 private:
 
