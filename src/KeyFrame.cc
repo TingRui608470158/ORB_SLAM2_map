@@ -195,10 +195,20 @@ vector<KeyFrame*> KeyFrame::GetVectorCovisibleKeyFrames()
 vector<KeyFrame*> KeyFrame::GetBestCovisibilityKeyFrames(const int &N)
 {
     unique_lock<mutex> lock(mMutexConnections);
-    if((int)mvpOrderedConnectedKeyFrames.size()<N)
-        return mvpOrderedConnectedKeyFrames;
+
+    vector<KeyFrame*> validConnectedKeyFrames; // 用于保存非空指针的关键帧
+    for(vector<KeyFrame*>::iterator vit=mvpOrderedConnectedKeyFrames.begin(), vend=mvpOrderedConnectedKeyFrames.end(); vit!=vend; vit++)
+    {
+        KeyFrame* pKF2 = *vit;
+        if (pKF2 != nullptr) {
+            validConnectedKeyFrames.push_back(pKF2); // 将非空指针的关键帧添加到新的向量中
+        }
+    }
+
+    if ((int)validConnectedKeyFrames.size() < N)
+        return validConnectedKeyFrames;
     else
-        return vector<KeyFrame*>(mvpOrderedConnectedKeyFrames.begin(),mvpOrderedConnectedKeyFrames.begin()+N);
+        return vector<KeyFrame*>(validConnectedKeyFrames.begin(), validConnectedKeyFrames.begin() + N);
 
 }
 
