@@ -115,6 +115,7 @@ public:
 
     void Reset();
     int nGood = 0;
+    const bool mbload_map = false;
 
 protected:
 
