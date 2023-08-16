@@ -36,6 +36,8 @@ void LoadImages(const string &strPathLeft, const string &strPathRight, const str
 
 int main(int argc, char **argv)
 {
+printf("Main 0\n");
+    string Map_name = "stereo_map.bin";
     if(argc != 6)
     {
         cerr << endl << "Usage: ./stereo_euroc path_to_vocabulary path_to_settings path_to_left_folder path_to_right_folder path_to_times_file" << endl;
@@ -96,12 +98,48 @@ int main(int argc, char **argv)
     cv::Mat M1l,M2l,M1r,M2r;
     cv::initUndistortRectifyMap(K_l,D_l,R_l,P_l.rowRange(0,3).colRange(0,3),cv::Size(cols_l,rows_l),CV_32F,M1l,M2l);
     cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,M1r,M2r);
+printf("Main 1\n");
+//check
+    //check Map if exist
+    fstream test_file(Map_name);
+    bool load_map = (test_file.good())? true:false;
+    test_file.close();
+    if(load_map)
+        cout<<"Main: Map exist"<<endl;
+    else
+        cout<<"Main: Map not exist"<<endl;
+    
+    //check camera if exist
+    cv::VideoCapture cap(0);
+    bool is_camera = (cap.isOpened())? true:false;
+    if(is_camera)
+        cout<<"Main: camera exist"<<endl;
+    else
+        cout<<"Main: camera not exist"<<endl;
+    cv::Mat frame;
+    bool ret;
+    // bool ret = cap.read(frame); // or cap >> frame;
+    // if(frame.size().width != 1280)
+    // {
+    //     printf("frame.size().width != 1280");
+    //     cap.release();
+    //     cv::VideoCapture cap(2);
+    // }
 
+
+printf("Main 2\n");
 
     const int nImages = vstrImageLeft.size();
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::STEREO,true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::STEREO,true,load_map);
+
+    // load map 
+    if(load_map)
+    {
+        cout<<"Main: Start Load Map "<<endl;
+        SLAM.LoadMap(Map_name);
+    }
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -110,64 +148,102 @@ int main(int argc, char **argv)
     cout << endl << "-------" << endl;
     cout << "Start processing sequence ..." << endl;
     cout << "Images in the sequence: " << nImages << endl << endl;
-
-    // Main loop
-    cv::Mat imLeft, imRight, imLeftRect, imRightRect;
-    for(int ni=0; ni<nImages; ni++)
+printf("Main 3\n");
+    if(is_camera)   //use camera
     {
-        // Read left and right images from file
-        imLeft = cv::imread(vstrImageLeft[ni],CV_LOAD_IMAGE_UNCHANGED);
-        imRight = cv::imread(vstrImageRight[ni],CV_LOAD_IMAGE_UNCHANGED);
+        
+        cv::Mat gray;
+        cv::Mat left_image,right_image,imLeftRect, imRightRect;
 
-        if(imLeft.empty())
+        // Track
+        while (cv::waitKey(1) != 'q') 
         {
-            cerr << endl << "Failed to load image at: "
-                 << string(vstrImageLeft[ni]) << endl;
-            return 1;
+            printf("Main 4\n");
+            ret = cap.read(frame); // or cap >> frame;
+            if (!ret) {
+                cout << "Can't receive frame (stream end?). Exiting ...\n";
+                break;
+            }
+            cout <<"frame.width = " <<frame.size().width<<endl;
+            cout <<"frame.height = " <<frame.size().height<<endl;
+
+            cv::Mat left_image = frame(cv::Rect(0, 0, 640, 400)); // 左侧图像区域
+            cv::Mat right_image = frame(cv::Rect(640, 0, 640, 400)); // 右侧图像区域
+            // cv::imshow("Left Image", left_image);
+            // cv::imshow("Right Image", right_image);
+            cv::remap(left_image,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
+            cv::remap(right_image,imRightRect,M1r,M2r,cv::INTER_LINEAR);
+            auto t_now = std::chrono::system_clock::now();
+            auto tframe = std::chrono::duration_cast<std::chrono::nanoseconds>(t_now.time_since_epoch()).count();
+            printf("Main 5\n");
+            SLAM.TrackStereo(imLeftRect,imRightRect,tframe);
+            printf("Main 6\n");
         }
+        cap.release();
 
-        if(imRight.empty())
-        {
-            cerr << endl << "Failed to load image at: "
-                 << string(vstrImageRight[ni]) << endl;
-            return 1;
-        }
-
-        cv::remap(imLeft,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
-        cv::remap(imRight,imRightRect,M1r,M2r,cv::INTER_LINEAR);
-
-        double tframe = vTimeStamp[ni];
-
-
-#ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
-#endif
-
-        // Pass the images to the SLAM system
-        SLAM.TrackStereo(imLeftRect,imRightRect,tframe);
-
-#ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
-#endif
-
-        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-
-        vTimesTrack[ni]=ttrack;
-
-        // Wait to load the next frame
-        double T=0;
-        if(ni<nImages-1)
-            T = vTimeStamp[ni+1]-tframe;
-        else if(ni>0)
-            T = tframe-vTimeStamp[ni-1];
-
-        if(ttrack<T)
-            usleep((T-ttrack)*1e6);
     }
+
+//     // Main loop
+//     cv::Mat imLeft, imRight, imLeftRect, imRightRect;
+//     for(int ni=0; ni<nImages; ni++)
+//     {
+//         // Read left and right images from file
+//         imLeft = cv::imread(vstrImageLeft[ni],CV_LOAD_IMAGE_UNCHANGED);
+//         imRight = cv::imread(vstrImageRight[ni],CV_LOAD_IMAGE_UNCHANGED);
+
+//         if(imLeft.empty())
+//         {
+//             cerr << endl << "Failed to load image at: "
+//                  << string(vstrImageLeft[ni]) << endl;
+//             return 1;
+//         }
+
+//         if(imRight.empty())
+//         {
+//             cerr << endl << "Failed to load image at: "
+//                  << string(vstrImageRight[ni]) << endl;
+//             return 1;
+//         }
+
+//         cv::remap(imLeft,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
+//         cv::remap(imRight,imRightRect,M1r,M2r,cv::INTER_LINEAR);
+
+//         double tframe = vTimeStamp[ni];
+
+
+// #ifdef COMPILEDWITHC11
+//         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+// #else
+//         std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+// #endif
+
+//         // Pass the images to the SLAM system
+//         SLAM.TrackStereo(imLeftRect,imRightRect,tframe);
+
+// #ifdef COMPILEDWITHC11
+//         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+// #else
+//         std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+// #endif
+
+//         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+
+//         vTimesTrack[ni]=ttrack;
+
+//         // Wait to load the next frame
+//         double T=0;
+//         if(ni<nImages-1)
+//             T = vTimeStamp[ni+1]-tframe;
+//         else if(ni>0)
+//             T = tframe-vTimeStamp[ni-1];
+
+//         if(ttrack<T)
+//             usleep((T-ttrack)*1e6);
+//     }
+
+    // Save map
+    if(!load_map)
+        SLAM.SaveMap(Map_name);
 
     // Stop all threads
     SLAM.Shutdown();

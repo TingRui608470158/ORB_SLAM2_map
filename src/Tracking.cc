@@ -270,8 +270,11 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
+printf("Track()  0\n");
     if(mState==NO_IMAGES_YET)
     {
+printf("Track() 1 \n");
+
         mState = NOT_INITIALIZED;
     }
 
@@ -282,6 +285,8 @@ void Tracking::Track()
 
     if(mState==NOT_INITIALIZED)
     {
+printf("Track()  2\n");
+
         if(mSensor==System::STEREO || mSensor==System::RGBD)
             StereoInitialization();
         else
