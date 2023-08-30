@@ -26,6 +26,9 @@
 namespace ORB_SLAM2
 {
 
+int Viewer::Windows_x = 0; // Initialize Windows_x
+int Viewer::Windows_y = 0; // Initialize Windows_y
+
 Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath):
     mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking),
     mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false)
@@ -136,6 +139,7 @@ void Viewer::Run()
 
         cv::Mat im = mpFrameDrawer->DrawFrame();
         cv::imshow("ORB-SLAM2: Current Frame",im);
+        cv::setMouseCallback("ORB-SLAM2: Current Frame", onMouse,this);
         cv::waitKey(mT);
 
         if(menuReset)
@@ -166,6 +170,37 @@ void Viewer::Run()
     }
 
     SetFinish();
+}
+
+void Viewer::onMouse(int event, int x, int y, int flags, void* userdata) {
+    Viewer* viewer = static_cast<Viewer*>(userdata);
+    if (event == cv::EVENT_MOUSEMOVE) {
+        // std::cout << "Mouse moved to (" << x << ", " << y << ")" << std::endl;
+        setWindowsAxis(x,y);
+    }
+
+    if (event == cv::EVENT_LBUTTONDOWN) {
+        viewer->SavePointAxis();
+    }
+}
+
+void Viewer::setWindowsAxis(int x, int y)
+{
+    Viewer::Windows_x = x;
+    Viewer::Windows_y = y;
+}
+
+void Viewer::SavePointAxis()
+{
+    // mpFrameDrawer->Update(mpTracker);
+    printf("Viewer::SavePointAxis()\n");
+    mpFrameDrawer->SavePoint();
+    printf("Viewer::SavePointAxis() 1\n");
+}
+cv::Point Viewer::getWindowsAxis()
+{
+    return cv::Point(Windows_x, Windows_y);
+
 }
 
 void Viewer::RequestFinish()

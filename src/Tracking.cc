@@ -270,11 +270,8 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
-printf("Track()  0\n");
     if(mState==NO_IMAGES_YET)
     {
-printf("Track() 1 \n");
-
         mState = NOT_INITIALIZED;
     }
 
@@ -285,8 +282,6 @@ printf("Track() 1 \n");
 
     if(mState==NOT_INITIALIZED)
     {
-printf("Track()  2\n");
-
         if(mSensor==System::STEREO || mSensor==System::RGBD)
             StereoInitialization();
         else
@@ -492,6 +487,10 @@ printf("Track()  2\n");
             mCurrentFrame.mpReferenceKF = mpReferenceKF;
 
         mLastFrame = Frame(mCurrentFrame);
+
+
+
+
     }
 
     // Store frame pose information to retrieve the complete camera trajectory afterwards.
@@ -534,6 +533,55 @@ printf("Track()  2\n");
             mlbLost.push_back(mState==LOST);
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Update drawer
+        
+        // printf("mCurrentFrame MapPoint number: %d\n ",mCurrentFrame.N);
+        cv::Point mouse_axis = mpViewer->getWindowsAxis();
+
+        bmouse_click.resize(mCurrentFrame.N);
+        WorldPos_mouseclick.resize(mCurrentFrame.N);
+
+        MapPoint* single_mappoint;
+        for(int i =0; i<mCurrentFrame.N; i++)
+        {
+            if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
+            {
+                 
+                cv::KeyPoint key_point = mCurrentFrame.mvKeys[i];
+
+                if(abs(mouse_axis.x -key_point.pt.x)<10 && abs(mouse_axis.y -key_point.pt.y)<10)
+                {
+                    // cout << "key_point.pt = (" << key_point.pt.x << ", " << key_point.pt.y << ")" << std::endl;
+                    single_mappoint = mCurrentFrame.mvpMapPoints[i];
+                    // cout<< "WorldPos = "<<single_mappoint->GetWorldPos()<<endl;
+                    bmouse_click[i] = true;
+                    WorldPos_mouseclick[i] = single_mappoint->GetWorldPos();
+                }
+                else
+                {
+                    bmouse_click[i] = false;
+                    cv::Mat newVector = (cv::Mat_<double>(3, 1) << 0, 0, 0);
+                    WorldPos_mouseclick[i] = newVector;
+                }
+                // single_mappoint = mCurrentFrame.mvpMapPoints[i];
+                // cout<< "single_  mappoint->GetWorldPos = "<<single_mappoint->GetWorldPos()<<endl;
+            }
+            else
+            {
+                bmouse_click[i] = false;
+                cv::Mat newVector = (cv::Mat_<double>(3, 1) << 0, 0, 0);
+                WorldPos_mouseclick[i] = newVector;
+                
+            }
+        }
+        // printf("mCurrentFrame MapPoint  true number: %d\n ",jj);
+        mpFrameDrawer->Update(this);
+        if (mbload_map)
+            mpFrameDrawer->objectdetection();
+        // cout<<"mouse_axis = "<<mouse_axis<<endl;
+////////////////////////////////////////////////////////////////////////////
 
 }
 
@@ -1619,6 +1667,12 @@ void Tracking::InformOnlyTracking(const bool &flag)
     mbOnlyTracking = flag;
 }
 
+vector<bool> Tracking::getMouseClick()
+{
+    // printf("Tracking::getMouseClick()\n");
+    // printf("bmouse_click.size = %d\n",bmouse_click.size());
+    return bmouse_click;
+}
 
 
 } //namespace ORB_SLAM

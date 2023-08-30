@@ -29,6 +29,7 @@
 
 #include <mutex>
 
+
 namespace ORB_SLAM2
 {
 
@@ -40,6 +41,7 @@ class System;
 class Viewer
 {
 public:
+    
     Viewer(System* pSystem, FrameDrawer* pFrameDrawer, MapDrawer* pMapDrawer, Tracking *pTracking, const string &strSettingPath);
 
     // Main thread function. Draw points, keyframes, the current camera pose and the last processed
@@ -54,10 +56,22 @@ public:
 
     bool isStopped();
 
+    static void onMouse(int event, int x, int y, int flags, void* userdata);
+    // void getWindowsAxis();
+    static void setWindowsAxis(int x, int y);
+    void SavePointAxis();
+    cv::Point getWindowsAxis();
+    
+
+
+    static int Windows_x, Windows_y;
+
     void Release();
+    
+    
 
 private:
-
+    
     bool Stop();
 
     System* mpSystem;
@@ -80,7 +94,8 @@ private:
     bool mbStopped;
     bool mbStopRequested;
     std::mutex mMutexStop;
-
+    
+    
 };
 
 }

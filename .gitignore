@@ -22,4 +22,7 @@ build/
 *~
 lib/
 Datasets/
+analyze/
+object_MapPoint.csv
+test/
 map.bin

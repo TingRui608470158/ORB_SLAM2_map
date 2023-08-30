@@ -36,7 +36,6 @@ void LoadImages(const string &strPathLeft, const string &strPathRight, const str
 
 int main(int argc, char **argv)
 {
-printf("Main 0\n");
     string Map_name = "stereo_map.bin";
     if(argc != 6)
     {
@@ -98,7 +97,6 @@ printf("Main 0\n");
     cv::Mat M1l,M2l,M1r,M2r;
     cv::initUndistortRectifyMap(K_l,D_l,R_l,P_l.rowRange(0,3).colRange(0,3),cv::Size(cols_l,rows_l),CV_32F,M1l,M2l);
     cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,M1r,M2r);
-printf("Main 1\n");
 //check
     //check Map if exist
     fstream test_file(Map_name);
@@ -118,16 +116,6 @@ printf("Main 1\n");
         cout<<"Main: camera not exist"<<endl;
     cv::Mat frame;
     bool ret;
-    // bool ret = cap.read(frame); // or cap >> frame;
-    // if(frame.size().width != 1280)
-    // {
-    //     printf("frame.size().width != 1280");
-    //     cap.release();
-    //     cv::VideoCapture cap(2);
-    // }
-
-
-printf("Main 2\n");
 
     const int nImages = vstrImageLeft.size();
 
@@ -148,7 +136,7 @@ printf("Main 2\n");
     cout << endl << "-------" << endl;
     cout << "Start processing sequence ..." << endl;
     cout << "Images in the sequence: " << nImages << endl << endl;
-printf("Main 3\n");
+
     if(is_camera)   //use camera
     {
         
@@ -158,14 +146,13 @@ printf("Main 3\n");
         // Track
         while (cv::waitKey(1) != 'q') 
         {
-            printf("Main 4\n");
             ret = cap.read(frame); // or cap >> frame;
             if (!ret) {
                 cout << "Can't receive frame (stream end?). Exiting ...\n";
                 break;
             }
-            cout <<"frame.width = " <<frame.size().width<<endl;
-            cout <<"frame.height = " <<frame.size().height<<endl;
+            // cout <<"frame.width = " <<frame.size().width<<endl;
+            // cout <<"frame.height = " <<frame.size().height<<endl;
 
             cv::Mat left_image = frame(cv::Rect(0, 0, 640, 400)); // 左侧图像区域
             cv::Mat right_image = frame(cv::Rect(640, 0, 640, 400)); // 右侧图像区域
@@ -175,9 +162,7 @@ printf("Main 3\n");
             cv::remap(right_image,imRightRect,M1r,M2r,cv::INTER_LINEAR);
             auto t_now = std::chrono::system_clock::now();
             auto tframe = std::chrono::duration_cast<std::chrono::nanoseconds>(t_now.time_since_epoch()).count();
-            printf("Main 5\n");
             SLAM.TrackStereo(imLeftRect,imRightRect,tframe);
-            printf("Main 6\n");
         }
         cap.release();
 

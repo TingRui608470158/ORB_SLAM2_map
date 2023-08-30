@@ -27,6 +27,7 @@
 
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
+#include <cmath>
 
 #include<mutex>
 
@@ -37,16 +38,44 @@ namespace ORB_SLAM2
 class Tracking;
 class Viewer;
 
+class Object_data
+{
+public:
+    std::string name; 
+    float x_mid ;
+    float y_mid ;
+    float z_mid ;
+    float x_range ;
+    float y_range ;
+    float z_range ;
+};
+
+
 class FrameDrawer
 {
 public:
-    FrameDrawer(Map* pMap);
+    FrameDrawer(Map* pMap, Tracking *pTracking);
 
     // Update info from the last processed frame.
     void Update(Tracking *pTracker);
 
     // Draw last processed frame.
     cv::Mat DrawFrame();
+    void SavePoint();
+    void objectdetection();
+    void DrawBoundingBox(float x_min,float x_max,float y_min,float y_max, cv::Scalar box_color);
+    void DrawIcon(int obj_index, float x_min, float x_max, float y_min, float y_max);
+    void DrawIcon(int obj_index, int keypoint_index, float upper_y_range);
+    void DrawMidPoint(int mid_point, cv::Scalar box_color);
+
+
+    int GetObjectMidIndex(int obj_index);
+    void Init_Object_Data();
+
+    vector<MapPoint*>  All_MapPoint;
+    vector<Object_data> Object_Pose;
+
+
 
 protected:
 
@@ -62,9 +91,11 @@ protected:
     vector<cv::KeyPoint> mvIniKeys;
     vector<int> mvIniMatches;
     int mState;
-
+    vector<bool>  bmouse_click;
+    vector<cv::Mat> WorldPos_mouseclick;
+     
     Map* mpMap;
-
+    Tracking* mpTracker;
     std::mutex mMutex;
 };
 

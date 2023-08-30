@@ -73,6 +73,7 @@ public:
 
     // Use this function if you have deactivated local mapping and you only want to localize the camera.
     void InformOnlyTracking(const bool &flag);
+    vector<bool> getMouseClick();
 
 
 public:
@@ -115,7 +116,9 @@ public:
 
     void Reset();
     int nGood = 0;
-    const bool mbload_map = false;
+     bool mbload_map = false;
+    vector<bool>  bmouse_click;
+    vector<cv::Mat> WorldPos_mouseclick ;
 
 protected:
 
