@@ -74,6 +74,7 @@ public:
     // Use this function if you have deactivated local mapping and you only want to localize the camera.
     void InformOnlyTracking(const bool &flag);
     vector<bool> getMouseClick();
+    void Save_frame_tocsv(const double &timestamp);
 
 
 public:
@@ -113,12 +114,16 @@ public:
 
     // True if local mapping is deactivated and we are performing only localization
     bool mbOnlyTracking;
+    bool bstart_save_csv = false;
 
     void Reset();
     int nGood = 0;
-     bool mbload_map = false;
+    bool mbload_map = false;
+    bool mbobj_dect = false;
     vector<bool>  bmouse_click;
     vector<cv::Mat> WorldPos_mouseclick ;
+    vector<cv::KeyPoint> mvCurrentKeys;
+    vector<MapPoint*> mvMapPoints;
 
 protected:
 

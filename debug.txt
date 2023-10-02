@@ -1,0 +1,9 @@
+[libx264 @ 0x55a5cbb48600] broken ffmpeg default settings detected
+[libx264 @ 0x55a5cbb48600] use an encoding preset (e.g. -vpre medium)
+[libx264 @ 0x55a5cbb48600] preset usage: -vpre <speed> -vpre <profile>
+[libx264 @ 0x55a5cbb48600] speed presets are listed in x264 --help
+[libx264 @ 0x55a5cbb48600] profile is optional; x264 defaults to high
+Could not open codec 'libx264': Unspecified errorError: Unable to create VideoWriter.
+
+sudo apt-get install libx264-dev
+HIGHGUI ERROR: V4L2: getting property #6 is not supported

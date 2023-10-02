@@ -36,6 +36,7 @@ void LoadImages(const string &strImagePath, const string &strPathTimes,
 
 int main(int argc, char **argv)
 {
+    std::cout<<"cv::getBuildInformation()=" << cv::getBuildInformation() << std::endl;
     string Map_name = "map.bin";
 
     if(argc != 5)
@@ -74,13 +75,26 @@ int main(int argc, char **argv)
 
 // start slam
     
+    int frameWidth = static_cast<int>(cap.get(CV_CAP_PROP_FRAME_WIDTH));
+    int frameHeight = static_cast<int>(cap.get(CV_CAP_PROP_FRAME_HEIGHT));
+    double frameRate = 30.0; // 设置帧率为30帧每秒
+    cout<<"frameWidth = "<<frameWidth<<endl;
+    cout<<"frameHeight = "<<frameHeight<<endl;
+    cout<<"frameRate = "<<frameRate<<endl;
+    cv::VideoWriter videoWriter("output_video.avi", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), cap.get(CV_CAP_PROP_FPS), cv::Size(frameWidth, frameHeight),false);
+    if (!videoWriter.isOpened()) {
+        std::cerr << "Error: Unable to create VideoWriter." << std::endl;
+        return -1;
+    }
+    
     if(is_camera)   //use camera
     {
         Mat frame;
         Mat gray;
-
+        Mat slam_tcw;
+        bool bwrite_video = false;
         // Track
-        while (waitKey(1) != 'q') {
+        while (char(waitKey(1)) != 'q') {
             bool ret = cap.read(frame); // or cap >> frame;
             if (!ret) {
                 cout << "Can't receive frame (stream end?). Exiting ...\n";
@@ -90,7 +104,18 @@ int main(int argc, char **argv)
             cvtColor(frame, gray, COLOR_BGR2GRAY);
             auto t_now = std::chrono::system_clock::now();
             auto timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(t_now.time_since_epoch()).count();
-            SLAM.TrackMonocular(gray,timestamp);
+            slam_tcw = SLAM.TrackMonocular(gray,timestamp);
+
+            if(!slam_tcw.empty())
+            {
+                bwrite_video = true;
+            }
+            
+            if(bwrite_video)
+            {
+                 printf("videoWriter\n");
+                 videoWriter<<gray;
+            }
         }
     }else    // use dataset
     {
@@ -172,7 +197,8 @@ int main(int argc, char **argv)
 
     // Stop all threads
     SLAM.Shutdown();
-
+    cap.release();
+    videoWriter.release();
     
     
     

@@ -262,9 +262,14 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
         mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-
     Track();
 
+    if(!mCurrentFrame.mTcw.empty())
+        bstart_save_csv = true;
+    
+    if(bstart_save_csv)
+        Save_frame_tocsv(timestamp);
+ 
     return mCurrentFrame.mTcw.clone();
 }
 
@@ -578,7 +583,7 @@ void Tracking::Track()
         }
         // printf("mCurrentFrame MapPoint  true number: %d\n ",jj);
         mpFrameDrawer->Update(this);
-        if (mbload_map)
+        if (mbload_map && mbobj_dect)
             mpFrameDrawer->objectdetection();
         // cout<<"mouse_axis = "<<mouse_axis<<endl;
 ////////////////////////////////////////////////////////////////////////////
@@ -1674,5 +1679,50 @@ vector<bool> Tracking::getMouseClick()
     return bmouse_click;
 }
 
+
+void Tracking::Save_frame_tocsv(const double &timestamp)
+{
+    std::string timestampStr = std::to_string(timestamp);
+    std::ofstream file("tracking_data.csv", std::ios::app); // 使用追加模式，以便将数据添加到文件末尾
+    // file << std::fixed << std::setprecision(20);
+
+    if (!file.is_open()) {
+        std::cerr << "无法打开或创建文件 tracking_data.csv" << std::endl;
+        return;
+    }
+    file << timestampStr ;
+
+    if(!mCurrentFrame.mTcw.empty())
+    {    
+        mvCurrentKeys=mCurrentFrame.mvKeys;
+        // printf("mvCurrentKeys.n= %d\n",mCurrentFrame.N);
+        float Pose_x, Pose_y, Pose_z;
+
+        for(int i=0;i<mCurrentFrame.N;i++) 
+        {
+            MapPoint* SaveMP = mCurrentFrame.mvpMapPoints[i];
+            if(SaveMP)
+            {
+                cv::Mat MapPoint_Pose =  SaveMP->GetWorldPos();
+                Pose_x = MapPoint_Pose.at<float>(0);
+                Pose_y = MapPoint_Pose.at<float>(1);
+                Pose_z = MapPoint_Pose.at<float>(2);
+                file<<","<< mvCurrentKeys[i].pt.x << "," <<mvCurrentKeys[i].pt.y<<"," <<  Pose_x  <<","<<   Pose_y  <<","<<  Pose_z;
+            }
+        }
+        
+        // 将时间戳写入CSV文件
+        file << std::endl;
+
+        // 关闭文件
+        file.close();
+
+        
+        // std::string img_path = "./csv_img/" + timestampStr + ".jpg";
+        // cv::imwrite(img_path, mImGray);
+    }else{
+        file << std::endl;
+    }
+}
 
 } //namespace ORB_SLAM
